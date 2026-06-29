@@ -12,6 +12,7 @@ import {
   TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   CircularProgress, Alert, Snackbar, Avatar, Divider,
   ToggleButton, ToggleButtonGroup, Tooltip as MTooltip, IconButton,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import AdminLayout from '../../components/common/AdminLayout';
 import StatsCard from '../../components/common/StatsCard';
@@ -26,6 +27,8 @@ const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov
 const SIGNUPS_AWAITING_BACKEND = true;
 
 export default function DashboardPage() {
+  const theme = useTheme();
+  const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -159,9 +162,13 @@ export default function DashboardPage() {
   return (
     <AdminLayout>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+      <Box sx={{
+        mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        flexWrap: 'wrap', gap: 2,
+        flexDirection: { xs: 'column', sm: 'row' },
+      }}>
         <Box>
-          <Typography variant="h4" color="primary">🛡️ Admin Dashboard</Typography>
+          <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>🛡️ Admin Dashboard</Typography>
           <Typography color="text.secondary" mt={0.5}>
             {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
             {' · '}
@@ -208,13 +215,15 @@ export default function DashboardPage() {
 
       {/* View toggle */}
       <Box sx={{ mb: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
-        <ToggleButtonGroup value={view} exclusive onChange={(_, v) => v && setView(v)} size="small">
-          <ToggleButton value="pending" sx={{ fontWeight: 700, px: 2 }}>📥 Pending ({pendingTotal})</ToggleButton>
-          <ToggleButton value="rejected" sx={{ fontWeight: 700, px: 2 }}>🗑️ Recently Rejected ({rejectedItems.length})</ToggleButton>
-        </ToggleButtonGroup>
-        <Box sx={{ display: 'flex', gap: 1 }}>
-          <Button size="small" variant="outlined" onClick={() => router.push('/approvals')}>All Products →</Button>
-          <Button size="small" variant="outlined" onClick={() => router.push('/users')}>All Users →</Button>
+        <Box sx={{ overflowX: 'auto', flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
+          <ToggleButtonGroup value={view} exclusive onChange={(_, v) => v && setView(v)} size="small" sx={{ flexWrap: 'wrap' }}>
+            <ToggleButton value="pending" sx={{ fontWeight: 700, px: 2 }}>📥 Pending ({pendingTotal})</ToggleButton>
+            <ToggleButton value="rejected" sx={{ fontWeight: 700, px: 2 }}>🗑️ Recently Rejected ({rejectedItems.length})</ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+        <Box sx={{ display: 'flex', gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+          <Button size="small" variant="outlined" onClick={() => router.push('/approvals')} sx={{ flex: { xs: 1, sm: '0 0 auto' } }}>All Products →</Button>
+          <Button size="small" variant="outlined" onClick={() => router.push('/users')} sx={{ flex: { xs: 1, sm: '0 0 auto' } }}>All Users →</Button>
         </Box>
       </Box>
 
@@ -315,7 +324,13 @@ export default function DashboardPage() {
       )}
 
       {/* Action dialog */}
-      <Dialog open={dialog.open} onClose={closeAction} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog
+        open={dialog.open}
+        onClose={closeAction}
+        maxWidth="sm" fullWidth
+        fullScreen={fullScreenDialog}
+        PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}
+      >
         <DialogTitle sx={{ fontWeight: 800, color: dialog.action === 'approved' ? 'success.main' : 'error.main' }}>
           {dialog.action === 'approved' ? '✅ Approve' : '❌ Reject'} {labelFor(dialog.type)}
         </DialogTitle>

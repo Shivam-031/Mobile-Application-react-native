@@ -77,16 +77,22 @@ export default function AnalyticsPage() {
 
   return (
     <AdminLayout>
-      <Box mb={3} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+      <Box mb={3} sx={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        flexWrap: 'wrap', gap: 2,
+        flexDirection: { xs: 'column', sm: 'row' },
+      }}>
         <Box>
-          <Typography variant="h4" color="primary">📈 Analytics</Typography>
+          <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>📈 Analytics</Typography>
           <Typography color="text.secondary" mt={0.5}>Platform performance and eco-impact overview</Typography>
         </Box>
-        <ToggleButtonGroup value={period} exclusive onChange={(_, v) => v && setPeriod(v)} size="small">
-          {[['monthly','Monthly'],['quarterly','Quarterly'],['yearly','Yearly']].map(([val, lbl]) => (
-            <ToggleButton key={val} value={val} sx={{ fontWeight: 700, px: 2 }}>{lbl}</ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+        <Box sx={{ overflowX: 'auto', width: { xs: '100%', sm: 'auto' } }}>
+          <ToggleButtonGroup value={period} exclusive onChange={(_, v) => v && setPeriod(v)} size="small" sx={{ flexWrap: 'wrap' }}>
+            {[['monthly','Monthly'],['quarterly','Quarterly'],['yearly','Yearly']].map(([val, lbl]) => (
+              <ToggleButton key={val} value={val} sx={{ fontWeight: 700, px: 2 }}>{lbl}</ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -110,7 +116,7 @@ export default function AnalyticsPage() {
                 <Typography variant="h6">💰 Revenue & Orders Trend</Typography>
                 <Chip label="Awaiting time-series API" size="small" variant="outlined" />
               </Box>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={{ xs: 220, md: 280 }}>
                 <AreaChart data={monthly}>
                   <defs>
                     <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -143,7 +149,7 @@ export default function AnalyticsPage() {
                 <Typography variant="h6">🌍 Carbon Saved (kg)</Typography>
                 <Chip label="Awaiting time-series API" size="small" variant="outlined" />
               </Box>
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={{ xs: 200, md: 240 }}>
                 <AreaChart data={monthly}>
                   <defs>
                     <linearGradient id="carbGrad" x1="0" y1="0" x2="0" y2="1">
@@ -176,7 +182,7 @@ export default function AnalyticsPage() {
                   No state-level data yet
                 </Typography>
               ) : (
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer width="100%" height={{ xs: 240, md: 300 }}>
                   <BarChart data={stateStats} layout="vertical" margin={{ left: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -204,7 +210,7 @@ export default function AnalyticsPage() {
                   Need at least 2 approved products to compare
                 </Typography>
               ) : (
-                <ResponsiveContainer width="100%" height={280}>
+                <ResponsiveContainer width="100%" height={{ xs: 240, md: 280 }}>
                   <RadarChart data={productRadar}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />

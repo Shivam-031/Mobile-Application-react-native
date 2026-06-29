@@ -4,11 +4,13 @@ import {
   Box, Grid, Card, CardContent, Typography, Button, Chip,
   TextField, Dialog, DialogTitle, DialogContent, DialogActions,
   CircularProgress, Alert, Snackbar, Avatar,
-  Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
+  Table, TableBody, TableCell, TablePagination,
   ToggleButton, ToggleButtonGroup, Select, MenuItem, FormControl, InputLabel,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../components/common/AdminLayout';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import api from '../../lib/api';
 
 const STATUS_COLORS = { pending: '#FF9800', approved: '#4CAF50', rejected: '#F44336' };
@@ -19,7 +21,15 @@ const INDIAN_STATES = [
   'Punjab', 'Odisha', 'Bihar', 'Haryana', 'Jharkhand', 'Telangana',
 ];
 
+const stockColor = (stock) =>
+  stock === 0 ? '#F44336' : stock < 15 ? '#FF9800' : '#4CAF50';
+
+const stockLabel = (stock) =>
+  stock === 0 ? 'Out of Stock' : stock < 15 ? 'Low Stock' : 'In Stock';
+
 export default function InventoryPage() {
+  const theme = useTheme();
+  const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const router = useRouter();
   const [products, setProducts] = useState([]);
   const [totalCount, setTotalCount] = useState(0);
@@ -172,7 +182,7 @@ export default function InventoryPage() {
     <AdminLayout>
       <Box mb={3} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
         <Box>
-          <Typography variant="h4" color="primary">📦 All-State Inventory</Typography>
+          <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>📦 All-State Inventory</Typography>
           <Typography color="text.secondary" mt={0.5}>View, edit stock, and approve/reject products across every branch and state</Typography>
         </Box>
       </Box>
@@ -184,9 +194,9 @@ export default function InventoryPage() {
           { label: 'In Stock (≥15)', value: counts.available, color: '#4CAF50', emoji: '✅' },
           { label: 'Low Stock', value: counts.lowStock, color: '#FF9800', emoji: '⚠️' },
           { label: 'Out of Stock', value: counts.outOfStock, color: '#F44336', emoji: '🚫' },
-          { label: 'Pending Review', value: counts.pending, color: '#795548', emoji: '⏳', md: 2.4 },
+          { label: 'Pending Review', value: counts.pending, color: '#795548', emoji: '⏳' },
         ].map((s) => (
-          <Grid item xs={6} md={s.md || (s.label === 'Pending Review' ? 2.4 : 3)} key={s.label}>
+          <Grid item xs={6} md={2.4} key={s.label}>
             <Card sx={{ borderTop: `4px solid ${s.color}` }}>
               <CardContent sx={{ textAlign: 'center' }}>
                 <Typography sx={{ fontSize: 28 }}>{s.emoji}</Typography>
@@ -202,10 +212,10 @@ export default function InventoryPage() {
       <Card sx={{ p: 2, mb: 2 }}>
         <Box sx={{ display: 'flex', gap: 2, flexWrap: 'wrap', alignItems: 'center' }}>
           <TextField
-            placeholder="Search by name..." size="small" sx={{ minWidth: 240, flex: 1 }}
+            placeholder="Search by name..." size="small" sx={{ minWidth: { xs: '100%', sm: 240 }, flex: { xs: '1 1 100%', sm: 1 } }}
             value={search} onChange={(e) => { setSearch(e.target.value); setPage(0); }}
           />
-          <FormControl size="small" sx={{ minWidth: 200 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 200 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
             <InputLabel>State</InputLabel>
             <Select
               value={stateFilter}
@@ -216,100 +226,151 @@ export default function InventoryPage() {
               {INDIAN_STATES.map((s) => <MenuItem key={s} value={s}>{s}</MenuItem>)}
             </Select>
           </FormControl>
-          <ToggleButtonGroup
-            value={statusFilter} exclusive
-            onChange={(_, v) => { if (v) { setStatusFilter(v); setPage(0); } }}
-            size="small"
-          >
-            <ToggleButton value="all" sx={{ fontWeight: 700, px: 2 }}>All</ToggleButton>
-            <ToggleButton value="approved" sx={{ fontWeight: 700, px: 2 }}>Approved</ToggleButton>
-            <ToggleButton value="pending" sx={{ fontWeight: 700, px: 2 }}>Pending</ToggleButton>
-            <ToggleButton value="rejected" sx={{ fontWeight: 700, px: 2 }}>Rejected</ToggleButton>
-          </ToggleButtonGroup>
+          <Box sx={{ overflowX: 'auto', flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
+            <ToggleButtonGroup
+              value={statusFilter} exclusive
+              onChange={(_, v) => { if (v) { setStatusFilter(v); setPage(0); } }}
+              size="small"
+              sx={{ flexWrap: 'wrap' }}
+            >
+              <ToggleButton value="all" sx={{ fontWeight: 700, px: 2 }}>All</ToggleButton>
+              <ToggleButton value="approved" sx={{ fontWeight: 700, px: 2 }}>Approved</ToggleButton>
+              <ToggleButton value="pending" sx={{ fontWeight: 700, px: 2 }}>Pending</ToggleButton>
+              <ToggleButton value="rejected" sx={{ fontWeight: 700, px: 2 }}>Rejected</ToggleButton>
+            </ToggleButtonGroup>
+          </Box>
         </Box>
       </Card>
 
       {/* Inventory Table */}
       <Card>
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f8f8f8' }}>
-            <TableRow>
-              {['Product', 'Branch', 'State', 'Price', 'Stock', 'CO₂ Saved', 'Status', 'Actions'].map((h) => (
-                <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((product) => {
-              const stockColor = product.stock === 0 ? '#F44336' : product.stock < 15 ? '#FF9800' : '#4CAF50';
-              return (
-                <TableRow key={product._id} hover>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ bgcolor: '#2F6B3F15', fontSize: 20 }}>🏺</Avatar>
-                      <Box>
-                        <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{product.name}</Typography>
-                        <Chip label={product.category} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
-                      </Box>
+        <ResponsiveTable
+          headers={['Product', 'Branch', 'State', 'Price', 'Stock', 'CO₂ Saved', 'Status', 'Actions']}
+          rows={filtered}
+          rowKey={(p) => p._id}
+          loading={loadingList}
+          emptyMessage="No products match the current filters."
+          renderRow={(product) => {
+            const sc = stockColor(product.stock);
+            return (
+              <>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                    <Avatar sx={{ bgcolor: '#2F6B3F15', fontSize: 20 }}>🏺</Avatar>
+                    <Box>
+                      <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{product.name}</Typography>
+                      <Chip label={product.category} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
                     </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{product.branchId?.name || '—'}</TableCell>
-                  <TableCell><Chip label={product.state} size="small" color="primary" variant="outlined" /></TableCell>
-                  <TableCell sx={{ fontWeight: 700 }}>₹{product.price}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={product.stock}
-                      size="small"
-                      sx={{ backgroundColor: `${stockColor}20`, color: stockColor, fontWeight: 700, minWidth: 40 }}
-                    />
-                  </TableCell>
-                  <TableCell sx={{ color: '#2F6B3F', fontWeight: 600 }}>{product.carbonSaved} kg</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={product.status}
-                      size="small"
-                      sx={{ backgroundColor: `${STATUS_COLORS[product.status]}20`, color: STATUS_COLORS[product.status], fontWeight: 700, textTransform: 'capitalize' }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                      <Button size="small" variant="outlined" onClick={() => openStockDialog(product)} sx={{ fontSize: 11 }}>
-                        📊 Stock
-                      </Button>
-                      {product.status === 'pending' && (
-                        <>
-                          <Button size="small" variant="contained" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ minWidth: 0, px: 1.2 }}>
-                            ✅
-                          </Button>
-                          <Button size="small" variant="contained" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ minWidth: 0, px: 1.2 }}>
-                            ❌
-                          </Button>
-                        </>
-                      )}
-                      {product.status === 'approved' && (
-                        <Button size="small" variant="outlined" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ fontSize: 11 }}>
-                          Revoke
-                        </Button>
-                      )}
-                      {product.status === 'rejected' && (
-                        <Button size="small" variant="outlined" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ fontSize: 11 }}>
-                          Re-approve
-                        </Button>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {!filtered.length && (
-              <TableRow>
-                <TableCell colSpan={8} sx={{ textAlign: 'center', py: 4, color: 'text.secondary' }}>
-                  No products match the current filters.
+                  </Box>
                 </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
+                <TableCell sx={{ fontSize: 13 }}>{product.branchId?.name || '—'}</TableCell>
+                <TableCell><Chip label={product.state} size="small" color="primary" variant="outlined" /></TableCell>
+                <TableCell sx={{ fontWeight: 700 }}>₹{product.price}</TableCell>
+                <TableCell>
+                  <Chip
+                    label={product.stock}
+                    size="small"
+                    sx={{ backgroundColor: `${sc}20`, color: sc, fontWeight: 700, minWidth: 40 }}
+                  />
+                </TableCell>
+                <TableCell sx={{ color: '#2F6B3F', fontWeight: 600 }}>{product.carbonSaved} kg</TableCell>
+                <TableCell>
+                  <Chip
+                    label={product.status}
+                    size="small"
+                    sx={{ backgroundColor: `${STATUS_COLORS[product.status]}20`, color: STATUS_COLORS[product.status], fontWeight: 700, textTransform: 'capitalize' }}
+                  />
+                </TableCell>
+                <TableCell>
+                  <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                    <Button size="small" variant="outlined" onClick={() => openStockDialog(product)} sx={{ fontSize: 11 }}>
+                      📊 Stock
+                    </Button>
+                    {product.status === 'pending' && (
+                      <>
+                        <Button size="small" variant="contained" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ minWidth: 0, px: 1.2 }}>
+                          ✅
+                        </Button>
+                        <Button size="small" variant="contained" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ minWidth: 0, px: 1.2 }}>
+                          ❌
+                        </Button>
+                      </>
+                    )}
+                    {product.status === 'approved' && (
+                      <Button size="small" variant="outlined" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ fontSize: 11 }}>
+                        Revoke
+                      </Button>
+                    )}
+                    {product.status === 'rejected' && (
+                      <Button size="small" variant="outlined" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ fontSize: 11 }}>
+                        Re-approve
+                      </Button>
+                    )}
+                  </Box>
+                </TableCell>
+              </>
+            );
+          }}
+          renderMobileCard={(product) => {
+            const sc = stockColor(product.stock);
+            return (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <Avatar sx={{ bgcolor: '#2F6B3F15', fontSize: 20, width: 36, height: 36 }}>🏺</Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{product.name}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
+                      {product.branchId?.name || '—'}
+                    </Typography>
+                  </Box>
+                  <Typography sx={{ fontWeight: 900, fontSize: 15 }}>₹{product.price}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
+                  <Chip label={product.state} size="small" color="primary" variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+                  {product.category && <Chip label={product.category} size="small" variant="outlined" sx={{ fontSize: 10, height: 18 }} />}
+                  <Chip
+                    label={product.status}
+                    size="small"
+                    sx={{ backgroundColor: `${STATUS_COLORS[product.status]}20`, color: STATUS_COLORS[product.status], fontWeight: 700, fontSize: 10, height: 18, textTransform: 'capitalize' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1.5, fontSize: 12, color: 'text.secondary', mb: 1.25, alignItems: 'center' }}>
+                  <Chip
+                    label={`📦 ${product.stock} · ${stockLabel(product.stock)}`}
+                    size="small"
+                    sx={{ backgroundColor: `${sc}20`, color: sc, fontWeight: 700, fontSize: 11 }}
+                  />
+                  <span style={{ color: '#2F6B3F', fontWeight: 600 }}>🌍 {product.carbonSaved} kg</span>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 0.75, flexWrap: 'wrap' }}>
+                  <Button size="small" variant="outlined" onClick={() => openStockDialog(product)} sx={{ flex: 1 }}>
+                    📊 Stock
+                  </Button>
+                  {product.status === 'pending' && (
+                    <>
+                      <Button size="small" variant="contained" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ flex: 1 }}>
+                        ✅ Approve
+                      </Button>
+                      <Button size="small" variant="contained" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ flex: 1 }}>
+                        ❌ Reject
+                      </Button>
+                    </>
+                  )}
+                  {product.status === 'approved' && (
+                    <Button size="small" variant="outlined" color="error" onClick={() => openApproveDialog(product, 'rejected')} sx={{ flex: 1 }}>
+                      Revoke
+                    </Button>
+                  )}
+                  {product.status === 'rejected' && (
+                    <Button size="small" variant="outlined" color="success" onClick={() => openApproveDialog(product, 'approved')} sx={{ flex: 1 }}>
+                      Re-approve
+                    </Button>
+                  )}
+                </Box>
+              </Box>
+            );
+          }}
+        />
         <TablePagination
           component="div"
           count={totalCount}
@@ -317,11 +378,18 @@ export default function InventoryPage() {
           rowsPerPage={rowsPerPage}
           onPageChange={(_, p) => setPage(p)}
           rowsPerPageOptions={[25]}
+          sx={{ '.MuiTablePagination-toolbar': { flexWrap: 'wrap' } }}
         />
       </Card>
 
-      {/* Approve / Reject Dialog — mirrors /approvals flow */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      {/* Approve / Reject Dialog — mirrors /approvals flow, fullScreen on xs */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        maxWidth="sm" fullWidth
+        fullScreen={fullScreenDialog}
+        PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}
+      >
         <DialogTitle sx={{ fontWeight: 800, color: action === 'approved' ? 'success.main' : 'error.main' }}>
           {action === 'approved' ? '✅ Approve Product' : '❌ Reject Product'}
         </DialogTitle>
@@ -357,7 +425,13 @@ export default function InventoryPage() {
       </Dialog>
 
       {/* Edit-stock dialog — admin-scoped update, no branch ownership check */}
-      <Dialog open={stockDialogOpen} onClose={() => setStockDialogOpen(false)} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      <Dialog
+        open={stockDialogOpen}
+        onClose={() => setStockDialogOpen(false)}
+        maxWidth="xs" fullWidth
+        fullScreen={fullScreenDialog}
+        PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}
+      >
         <DialogTitle sx={{ fontWeight: 800 }}>📊 Update Stock</DialogTitle>
         <DialogContent>
           {selected && (

@@ -1,20 +1,23 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import {
   Box, Grid, Card, CardContent, Typography, Button, Chip,
-  TextField, Dialog, DialogTitle, DialogContent, DialogActions,
+  TextField, Dialog, DialogTitle, DialogContent, DialogActions, DialogContentText,
   CircularProgress, Alert, Snackbar, Avatar,
   Table, TableBody, TableCell, TableHead, TableRow, TablePagination,
-  ToggleButton, ToggleButtonGroup,
+  ToggleButton, ToggleButtonGroup, useMediaQuery, useTheme,
 } from '@mui/material';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../../components/common/AdminLayout';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import api from '../../lib/api';
 
 const STATUS_COLORS = { pending: '#FF9800', approved: '#4CAF50', rejected: '#F44336' };
 
 export default function ApprovalsPage() {
   const router = useRouter();
+  const theme = useTheme();
+  const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const [products, setProducts] = useState([]);
   const [filter, setFilter] = useState('pending');
   const [page, setPage] = useState(0);
@@ -142,7 +145,7 @@ export default function ApprovalsPage() {
   return (
     <AdminLayout>
       <Box mb={3}>
-        <Typography variant="h4" color="primary">✅ Product Approvals</Typography>
+        <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>✅ Product Approvals</Typography>
         <Typography color="text.secondary" mt={0.5}>Review and approve products submitted by Employees</Typography>
       </Box>
 
@@ -167,45 +170,28 @@ export default function ApprovalsPage() {
       </Grid>
 
       {/* Filter Tabs */}
-      <Box mb={2}>
-        <ToggleButtonGroup value={filter} exclusive onChange={(_, v) => v && setFilter(v)} size="small">
+      <Box mb={2} sx={{ overflowX: 'auto' }}>
+        <ToggleButtonGroup value={filter} exclusive onChange={(_, v) => v && setFilter(v)} size="small" sx={{ flexWrap: 'wrap' }}>
           {[['all', 'All'], ['pending', `Pending (${counts.pending})`], ['approved', 'Approved'], ['rejected', 'Rejected']].map(([val, lbl]) => (
             <ToggleButton key={val} value={val} sx={{ fontWeight: 700, px: 2 }}>{lbl}</ToggleButton>
           ))}
         </ToggleButtonGroup>
       </Box>
 
-      {/* Products Table */}
+      {/* Products Table — ResponsiveTable handles md+ table vs xs/sm cards */}
       <Card>
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f8f8f8' }}>
-            <TableRow>
-              {['Product', 'Employee', 'State', 'Price', 'Stock', 'CO₂ Saved', 'Submitted', 'Status', 'Actions'].map((h) => (
-                <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {tableLoading ? (
-              <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 6 }}>
-                  <CircularProgress size={32} />
-                </TableCell>
-              </TableRow>
-            ) : fetchError ? (
-              <TableRow>
-                <TableCell colSpan={9} sx={{ p: 2 }}>
-                  <Alert severity="error">{fetchError}</Alert>
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={9} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                  No products match this filter.
-                </TableCell>
-              </TableRow>
-            ) : filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((product) => (
-              <TableRow key={product._id} hover>
+        <CardContent sx={{ p: { xs: 1, md: 2 }, '&:last-child': { pb: { xs: 1, md: 2 } } }}>
+          {fetchError && !tableLoading && (
+            <Alert severity="error" sx={{ mb: 2 }}>{fetchError}</Alert>
+          )}
+          <ResponsiveTable
+            headers={['Product', 'Employee', 'State', 'Price', 'Stock', 'CO₂ Saved', 'Submitted', 'Status', 'Actions']}
+            rows={filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+            rowKey={(p) => p._id}
+            loading={tableLoading}
+            emptyMessage="No products match this filter."
+            renderRow={(product) => (
+              <Fragment key={`r-${product._id}`}>
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Avatar sx={{ bgcolor: '#2F6B3F15', fontSize: 20 }}>🏺</Avatar>
@@ -247,10 +233,49 @@ export default function ApprovalsPage() {
                     <Button size="small" variant="outlined" color="success" onClick={() => openDialog(product, 'approved')} sx={{ fontSize: 11 }}>Re-approve</Button>
                   )}
                 </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+              </Fragment>
+            )}
+            renderMobileCard={(product) => (
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                  <Avatar sx={{ bgcolor: '#2F6B3F15', fontSize: 20, width: 36, height: 36 }}>🏺</Avatar>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{product.name}</Typography>
+                    <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
+                      By {product.branchId?.name || 'Unknown'} · {new Date(product.createdAt).toLocaleDateString('en-IN')}
+                    </Typography>
+                  </Box>
+                  <Chip
+                    label={product.status}
+                    size="small"
+                    sx={{ backgroundColor: `${STATUS_COLORS[product.status]}20`, color: STATUS_COLORS[product.status], fontWeight: 700, textTransform: 'capitalize' }}
+                  />
+                </Box>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
+                  <Chip label={product.state} size="small" color="primary" variant="outlined" />
+                  <Chip label={product.category} size="small" variant="outlined" />
+                  <Typography sx={{ fontWeight: 700, fontSize: 13, alignSelf: 'center', ml: 'auto' }}>₹{product.price}</Typography>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 2, fontSize: 12, color: 'text.secondary', mb: product.status === 'pending' ? 1.5 : 0 }}>
+                  <span>📦 {product.stock} in stock</span>
+                  <span style={{ color: '#2F6B3F', fontWeight: 600 }}>🌍 {product.carbonSaved} kg CO₂</span>
+                </Box>
+                {product.status === 'pending' && (
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button fullWidth size="small" variant="contained" color="success" onClick={() => openDialog(product, 'approved')}>✅ Approve</Button>
+                    <Button fullWidth size="small" variant="contained" color="error" onClick={() => openDialog(product, 'rejected')}>❌ Reject</Button>
+                  </Box>
+                )}
+                {product.status === 'approved' && (
+                  <Button fullWidth size="small" variant="outlined" color="error" onClick={() => openDialog(product, 'rejected')}>Revoke</Button>
+                )}
+                {product.status === 'rejected' && (
+                  <Button fullWidth size="small" variant="outlined" color="success" onClick={() => openDialog(product, 'approved')}>Re-approve</Button>
+                )}
+              </Box>
+            )}
+          />
+        </CardContent>
         <TablePagination
           component="div"
           count={filtered.length}
@@ -258,11 +283,13 @@ export default function ApprovalsPage() {
           rowsPerPage={rowsPerPage}
           onPageChange={(_, p) => setPage(p)}
           rowsPerPageOptions={[10]}
+          sx={{ '.MuiTablePagination-toolbar': { flexWrap: 'wrap' } }}
         />
       </Card>
 
-      {/* Approve/Reject Dialog */}
-      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      {/* Approve/Reject Dialog — fullScreen on mobile so the note field
+          and the action button have real room. Centered card on tablet+ */}
+      <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="sm" fullWidth fullScreen={fullScreenDialog} PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}>
         <DialogTitle sx={{ fontWeight: 800, color: action === 'approved' ? 'success.main' : 'error.main' }}>
           {action === 'approved' ? '✅ Approve Product' : '❌ Reject Product'}
         </DialogTitle>

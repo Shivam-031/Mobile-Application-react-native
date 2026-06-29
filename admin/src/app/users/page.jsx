@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect } from 'react';
 import {
-  Box, Card, Typography, Table, TableBody, TableCell, TableHead,
-  TableRow, TablePagination, Chip, Button, TextField, InputAdornment,
+  Box, Card, Typography, Table, TableBody, TableCell,
+  TablePagination, Chip, Button, TextField, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions, MenuItem, Select,
   FormControl, InputLabel, Avatar, CircularProgress, Snackbar, Alert,
-  ToggleButtonGroup, ToggleButton,
+  ToggleButtonGroup, ToggleButton, useMediaQuery, useTheme,
 } from '@mui/material';
 import AdminLayout from '../../components/common/AdminLayout';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import api from '../../lib/api';
 
 const ROLE_COLORS = { USER: '#2196F3', EMPLOYEE: '#FF9800', MASTER_ADMIN: '#9C27B0' };
@@ -17,6 +18,8 @@ const ROLE_LABELS = { USER: 'User', EMPLOYEE: 'Employee', MASTER_ADMIN: 'Admin' 
 const INDIAN_STATES = ['Maharashtra','Delhi','Kerala','Rajasthan','Karnataka','Tamil Nadu','Gujarat','West Bengal','Uttar Pradesh','Madhya Pradesh','Assam','Punjab','Odisha','Telangana'];
 
 export default function UsersPage() {
+  const theme = useTheme();
+  const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const [users, setUsers] = useState([]);
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
@@ -74,7 +77,7 @@ export default function UsersPage() {
   return (
     <AdminLayout>
       <Box mb={3}>
-        <Typography variant="h4" color="primary">👥 User Management</Typography>
+        <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>👥 User Management</Typography>
         <Typography color="text.secondary" mt={0.5}>Manage users, promote Employees, track green scores</Typography>
       </Box>
 
@@ -86,7 +89,7 @@ export default function UsersPage() {
           { label: 'Admins', value: users.filter((u) => u.role === 'MASTER_ADMIN').length, color: '#9C27B0' },
           { label: 'Avg Green Score', value: avgGreenScore, color: '#4CAF50' },
         ].map((s) => (
-          <Card key={s.label} sx={{ flex: 1, minWidth: 140, borderTop: `3px solid ${s.color}` }}>
+          <Card key={s.label} sx={{ flex: '1 1 140px', minWidth: 140, borderTop: `3px solid ${s.color}` }}>
             <Box sx={{ p: 2, textAlign: 'center' }}>
               <Typography variant="h5" fontWeight={900} sx={{ color: s.color }}>{s.value}</Typography>
               <Typography variant="caption" color="text.secondary">{s.label}</Typography>
@@ -103,87 +106,111 @@ export default function UsersPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           InputProps={{ startAdornment: <InputAdornment position="start">🔍</InputAdornment> }}
-          sx={{ minWidth: 250 }}
+          sx={{ minWidth: { xs: '100%', sm: 250 }, flex: { xs: '1 1 100%', sm: '0 1 auto' } }}
         />
-        <ToggleButtonGroup value={roleFilter} exclusive onChange={(_, v) => v && setRoleFilter(v)} size="small">
-          {[['all','All'],['USER','Users'],['EMPLOYEE','Employees'],['MASTER_ADMIN','Admins']].map(([val, lbl]) => (
-            <ToggleButton key={val} value={val} sx={{ fontWeight: 700, px: 2, fontSize: 12 }}>{lbl}</ToggleButton>
-          ))}
-        </ToggleButtonGroup>
+        <Box sx={{ overflowX: 'auto', flex: { xs: '1 1 100%', sm: '0 1 auto' } }}>
+          <ToggleButtonGroup value={roleFilter} exclusive onChange={(_, v) => v && setRoleFilter(v)} size="small" sx={{ flexWrap: 'wrap' }}>
+            {[['all','All'],['USER','Users'],['EMPLOYEE','Employees'],['MASTER_ADMIN','Admins']].map(([val, lbl]) => (
+              <ToggleButton key={val} value={val} sx={{ fontWeight: 700, px: 2, fontSize: 12 }}>{lbl}</ToggleButton>
+            ))}
+          </ToggleButtonGroup>
+        </Box>
       </Box>
 
       <Card>
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f8f8f8' }}>
-            <TableRow>
-              {['User', 'Email', 'Phone', 'Role', 'State', 'Green Score', 'Joined', 'Actions'].map((h) => (
-                <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                  <CircularProgress size={32} />
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                  No users found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((user) => (
-                <TableRow key={user._id} hover>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                      <Avatar sx={{ bgcolor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, width: 36, height: 36, fontSize: 16 }}>
-                        {user.role === 'EMPLOYEE' ? '🏭' : '👤'}
-                      </Avatar>
-                      <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{user.name}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{user.email}</TableCell>
-                  <TableCell sx={{ fontSize: 13 }}>{user.phone || '—'}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={ROLE_LABELS[user.role] || user.role}
-                      size="small"
-                      sx={{ backgroundColor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, color: ROLE_COLORS[user.role] || '#9E9E9E', fontWeight: 700, fontSize: 11 }}
-                    />
-                  </TableCell>
-                  <TableCell>{user.state ? <Chip label={user.state} size="small" variant="outlined" color="primary" /> : '—'}</TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                      <Typography sx={{ fontWeight: 700, color: '#4CAF50' }}>🌟 {user.greenScore ?? 0}</Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>
-                    {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN') : '—'}
-                  </TableCell>
-                  <TableCell>
-                    {user.role !== 'MASTER_ADMIN' && (
-                      <Button size="small" variant="outlined" color="warning" onClick={() => openPromote(user)} sx={{ fontSize: 11 }}>
-                        {user.role === 'USER' ? '⬆️ Promote' : '⬇️ Demote'}
-                      </Button>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          headers={['User', 'Email', 'Phone', 'Role', 'State', 'Green Score', 'Joined', 'Actions']}
+          rows={filtered.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)}
+          rowKey={(u) => u._id}
+          loading={loading}
+          emptyMessage="No users found"
+          renderRow={(user) => (
+            <>
+              <TableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                  <Avatar sx={{ bgcolor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, width: 36, height: 36, fontSize: 16 }}>
+                    {user.role === 'EMPLOYEE' ? '🏭' : '👤'}
+                  </Avatar>
+                  <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{user.name}</Typography>
+                </Box>
+              </TableCell>
+              <TableCell sx={{ fontSize: 13, color: 'text.secondary' }}>{user.email}</TableCell>
+              <TableCell sx={{ fontSize: 13 }}>{user.phone || '—'}</TableCell>
+              <TableCell>
+                <Chip
+                  label={ROLE_LABELS[user.role] || user.role}
+                  size="small"
+                  sx={{ backgroundColor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, color: ROLE_COLORS[user.role] || '#9E9E9E', fontWeight: 700, fontSize: 11 }}
+                />
+              </TableCell>
+              <TableCell>{user.state ? <Chip label={user.state} size="small" variant="outlined" color="primary" /> : '—'}</TableCell>
+              <TableCell>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                  <Typography sx={{ fontWeight: 700, color: '#4CAF50' }}>🌟 {user.greenScore ?? 0}</Typography>
+                </Box>
+              </TableCell>
+              <TableCell sx={{ fontSize: 12, color: 'text.secondary' }}>
+                {user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-IN') : '—'}
+              </TableCell>
+              <TableCell>
+                {user.role !== 'MASTER_ADMIN' && (
+                  <Button size="small" variant="outlined" color="warning" onClick={() => openPromote(user)} sx={{ fontSize: 11 }}>
+                    {user.role === 'USER' ? '⬆️ Promote' : '⬇️ Demote'}
+                  </Button>
+                )}
+              </TableCell>
+            </>
+          )}
+          renderMobileCard={(user) => (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <Avatar sx={{ bgcolor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, width: 36, height: 36, fontSize: 16 }}>
+                  {user.role === 'EMPLOYEE' ? '🏭' : '👤'}
+                </Avatar>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{user.name}</Typography>
+                  <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>{user.email}</Typography>
+                </Box>
+                <Chip
+                  label={ROLE_LABELS[user.role] || user.role}
+                  size="small"
+                  sx={{ backgroundColor: `${ROLE_COLORS[user.role] || '#9E9E9E'}20`, color: ROLE_COLORS[user.role] || '#9E9E9E', fontWeight: 700, fontSize: 11 }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
+                {user.state && <Chip label={user.state} size="small" variant="outlined" color="primary" sx={{ fontSize: 10, height: 18 }} />}
+                {user.phone && <Typography sx={{ fontSize: 11, color: 'text.secondary', alignSelf: 'center' }}>📱 {user.phone}</Typography>}
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2, fontSize: 12, color: 'text.secondary', mb: user.role !== 'MASTER_ADMIN' ? 1.5 : 0, alignItems: 'center' }}>
+                <span style={{ fontWeight: 700, color: '#4CAF50' }}>🌟 {user.greenScore ?? 0}</span>
+                <span>{user.createdAt ? `Joined ${new Date(user.createdAt).toLocaleDateString('en-IN')}` : ''}</span>
+              </Box>
+              {user.role !== 'MASTER_ADMIN' && (
+                <Button fullWidth size="small" variant="outlined" color="warning" onClick={() => openPromote(user)}>
+                  {user.role === 'USER' ? '⬆️ Promote' : '⬇️ Demote'}
+                </Button>
+              )}
+            </Box>
+          )}
+        />
         <TablePagination
           component="div" count={filtered.length}
           page={page} rowsPerPage={rowsPerPage}
           onPageChange={(_, p) => setPage(p)} rowsPerPageOptions={[10]}
+          sx={{ '.MuiTablePagination-toolbar': { flexWrap: 'wrap' } }}
         />
       </Card>
 
-      {/* Promote Dialog */}
-      <Dialog open={promoteDialog.open} onClose={() => !actionLoading && setPromoteDialog({ open: false, user: null })} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      {/* Promote Dialog — fullScreen on mobile so the role + state pickers
+          have real room. Centered card on tablet+ */}
+      <Dialog
+        open={promoteDialog.open}
+        onClose={() => !actionLoading && setPromoteDialog({ open: false, user: null })}
+        maxWidth="xs"
+        fullWidth
+        fullScreen={fullScreenDialog}
+        PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}
+      >
         <DialogTitle fontWeight={800}>Change User Role</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
           {promoteDialog.user && (

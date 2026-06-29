@@ -1,16 +1,20 @@
 'use client';
 import {
-  Box, Grid, Card, CardContent, Typography, Table,
-  TableBody, TableCell, TableHead, TableRow, Chip, LinearProgress,
+  Box, Grid, Card, CardContent, Typography, Chip, LinearProgress,
+  TableCell,
 } from '@mui/material';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip, ResponsiveContainer, Legend,
 } from 'recharts';
 import AdminLayout from '../../components/common/AdminLayout';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
+// Placeholder data — real time-series endpoints aren't wired yet. These are
+// the same seed values the page shipped with; flagging them here so we don't
+// quietly mistake them for live numbers in a future cleanup pass.
 const MONTHLY_CARBON = MONTHS.map((m, i) => ({
   month: m,
   generated: Math.floor(280 - i * 10 + Math.random() * 30),
@@ -46,7 +50,7 @@ export default function CarbonReportsPage() {
   return (
     <AdminLayout>
       <Box mb={3}>
-        <Typography variant="h4" color="primary">🌍 Carbon Reports</Typography>
+        <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>🌍 Carbon Reports</Typography>
         <Typography color="text.secondary" mt={0.5}>Platform-wide carbon footprint tracking and reduction insights</Typography>
       </Box>
 
@@ -76,7 +80,7 @@ export default function CarbonReportsPage() {
           <Card>
             <CardContent>
               <Typography variant="h6" mb={2}>📊 Carbon Generated vs Saved (Monthly)</Typography>
-              <ResponsiveContainer width="100%" height={280}>
+              <ResponsiveContainer width="100%" height={{ xs: 220, md: 280 }}>
                 <AreaChart data={MONTHLY_CARBON}>
                   <defs>
                     <linearGradient id="genGrad" x1="0" y1="0" x2="0" y2="1">
@@ -106,7 +110,7 @@ export default function CarbonReportsPage() {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" mb={2}>🌳 Tree Equivalents Saved</Typography>
-              <ResponsiveContainer width="100%" height={240}>
+              <ResponsiveContainer width="100%" height={{ xs: 200, md: 240 }}>
                 <BarChart data={MONTHLY_CARBON}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />
@@ -124,41 +128,62 @@ export default function CarbonReportsPage() {
         {/* State Carbon Impact */}
         <Grid item xs={12} md={7}>
           <Card>
-            <CardContent>
+            <CardContent sx={{ '&:last-child': { pb: 2 } }}>
               <Typography variant="h6" mb={2}>🗺️ State-wise Carbon Impact</Typography>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    {['State', 'CO₂ Generated', 'CO₂ Saved', 'Reduction %', 'Progress'].map((h) => (
-                      <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {STATE_CARBON.map((s) => (
-                    <TableRow key={s.state} hover>
-                      <TableCell sx={{ fontWeight: 700 }}>{s.state}</TableCell>
-                      <TableCell sx={{ color: '#F44336', fontWeight: 600 }}>{s.generated} kg</TableCell>
-                      <TableCell sx={{ color: '#4CAF50', fontWeight: 600 }}>{s.saved} kg</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={`${s.reduction}%`}
-                          size="small"
-                          sx={{ backgroundColor: s.reduction > 15 ? '#E8F5E9' : s.reduction > 10 ? '#FFF8E1' : '#FFEBEE',
-                            color: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336', fontWeight: 700 }}
-                        />
-                      </TableCell>
-                      <TableCell sx={{ minWidth: 100 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={Math.min(100, s.reduction * 5)}
-                          sx={{ height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { backgroundColor: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336' } }}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <ResponsiveTable
+                headers={['State', 'CO₂ Generated', 'CO₂ Saved', 'Reduction %', 'Progress']}
+                rows={STATE_CARBON}
+                rowKey={(s) => s.state}
+                emptyMessage="No state carbon data"
+                renderRow={(s) => (
+                  <>
+                    <TableCell sx={{ fontWeight: 700 }}>{s.state}</TableCell>
+                    <TableCell sx={{ color: '#F44336', fontWeight: 600 }}>{s.generated} kg</TableCell>
+                    <TableCell sx={{ color: '#4CAF50', fontWeight: 600 }}>{s.saved} kg</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={`${s.reduction}%`}
+                        size="small"
+                        sx={{ backgroundColor: s.reduction > 15 ? '#E8F5E9' : s.reduction > 10 ? '#FFF8E1' : '#FFEBEE',
+                          color: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336', fontWeight: 700 }}
+                      />
+                    </TableCell>
+                    <TableCell sx={{ minWidth: 100 }}>
+                      <LinearProgress
+                        variant="determinate"
+                        value={Math.min(100, s.reduction * 5)}
+                        sx={{ height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { backgroundColor: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336' } }}
+                      />
+                    </TableCell>
+                  </>
+                )}
+                renderMobileCard={(s) => (
+                  <Box>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{s.state}</Typography>
+                        <Typography sx={{ fontSize: 11, color: 'text.secondary' }} noWrap>
+                          Generated {s.generated.toLocaleString()} kg · Saved {s.saved.toLocaleString()} kg
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${s.reduction}%`}
+                        size="small"
+                        sx={{
+                          backgroundColor: s.reduction > 15 ? '#E8F5E9' : s.reduction > 10 ? '#FFF8E1' : '#FFEBEE',
+                          color: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336',
+                          fontWeight: 700, fontSize: 11,
+                        }}
+                      />
+                    </Box>
+                    <LinearProgress
+                      variant="determinate"
+                      value={Math.min(100, s.reduction * 5)}
+                      sx={{ height: 6, borderRadius: 3, '& .MuiLinearProgress-bar': { backgroundColor: s.reduction > 15 ? '#4CAF50' : s.reduction > 10 ? '#FF9800' : '#F44336' } }}
+                    />
+                  </Box>
+                )}
+              />
             </CardContent>
           </Card>
         </Grid>
@@ -170,7 +195,7 @@ export default function CarbonReportsPage() {
               <Typography variant="h6" mb={2}>👥 User Carbon Levels</Typography>
               {USER_CARBON.map((u) => (
                 <Box key={u.name} sx={{ mb: 2 }}>
-                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5 }}>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 0.5, gap: 1, flexWrap: 'wrap' }}>
                     <Typography sx={{ fontSize: 13, fontWeight: 600 }}>{u.name}</Typography>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>{u.monthly} kg/mo</Typography>

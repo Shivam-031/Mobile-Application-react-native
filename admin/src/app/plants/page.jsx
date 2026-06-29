@@ -2,11 +2,13 @@
 import { useState, useEffect } from 'react';
 import {
   Box, Card, Typography, Grid, Table, TableBody, TableCell,
-  TableHead, TableRow, Chip, Button, TextField, InputAdornment,
+  Chip, Button, TextField, InputAdornment,
   Dialog, DialogTitle, DialogContent, DialogActions, MenuItem,
   Select, FormControl, InputLabel, CircularProgress, Snackbar, Alert,
+  useMediaQuery, useTheme,
 } from '@mui/material';
 import AdminLayout from '../../components/common/AdminLayout';
+import ResponsiveTable from '../../components/common/ResponsiveTable';
 import api from '../../lib/api';
 
 const CARBON_COLORS = { Low: '#FF9800', Medium: '#2196F3', High: '#4CAF50', 'Very High': '#2F6B3F' };
@@ -16,6 +18,8 @@ const EMPTY_FORM = { name: '', scientificName: '', description: '', category: 'n
 const INDIAN_STATES = ['Maharashtra','Delhi','Kerala','Rajasthan','Karnataka','Tamil Nadu','Gujarat','West Bengal','UP','MP','Assam','Manipur','Meghalaya','Punjab','Odisha'];
 
 export default function PlantsPage() {
+  const theme = useTheme();
+  const fullScreenDialog = useMediaQuery(theme.breakpoints.down('sm'));
   const [plants, setPlants] = useState([]);
   const [search, setSearch] = useState('');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -80,12 +84,16 @@ export default function PlantsPage() {
 
   return (
     <AdminLayout>
-      <Box mb={3} sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 2 }}>
+      <Box mb={3} sx={{
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        flexWrap: 'wrap', gap: 2,
+        flexDirection: { xs: 'column', sm: 'row' },
+      }}>
         <Box>
-          <Typography variant="h4" color="primary">🌿 Plant Management</Typography>
+          <Typography variant="h4" color="primary" sx={{ fontSize: { xs: 24, md: 32 } }}>🌿 Plant Management</Typography>
           <Typography color="text.secondary" mt={0.5}>Manage India's plant biodiversity database</Typography>
         </Box>
-        <Button variant="contained" onClick={openAdd} sx={{ fontWeight: 700 }}>➕ Add Plant Species</Button>
+        <Button variant="contained" onClick={openAdd} sx={{ fontWeight: 700, width: { xs: '100%', sm: 'auto' } }}>➕ Add Plant Species</Button>
       </Box>
 
       {/* Stats */}
@@ -110,70 +118,96 @@ export default function PlantsPage() {
 
       {/* Search */}
       <TextField
-        placeholder="Search plants..." size="small" fullWidth sx={{ mb: 2, maxWidth: 400 }}
+        placeholder="Search plants..." size="small" fullWidth sx={{ mb: 2, maxWidth: { xs: '100%', sm: 400 } }}
         value={search} onChange={(e) => setSearch(e.target.value)}
         InputProps={{ startAdornment: <InputAdornment position="start">🔍</InputAdornment> }}
       />
 
       <Card>
-        <Table>
-          <TableHead sx={{ backgroundColor: '#f8f8f8' }}>
-            <TableRow>
-              {['Plant', 'Scientific Name', 'Category', 'Count', 'Carbon Absorption', 'States', 'Status', 'Actions'].map((h) => (
-                <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {loading ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
-                  <CircularProgress size={32} />
-                </TableCell>
-              </TableRow>
-            ) : filtered.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center" sx={{ py: 6, color: 'text.secondary' }}>
-                  No plants found
-                </TableCell>
-              </TableRow>
-            ) : (
-              filtered.map((plant) => (
-                <TableRow key={plant._id} hover>
-                  <TableCell sx={{ fontWeight: 700 }}>{plant.name}</TableCell>
-                  <TableCell sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.secondary' }}>{plant.scientificName}</TableCell>
-                  <TableCell>
-                    <Chip label={plant.category} size="small" color={plant.category === 'protected' ? 'warning' : 'default'} variant="outlined" />
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, color: '#2F6B3F' }}>{(plant.speciesCount ?? 0).toLocaleString()}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={plant.carbonAbsorption}
-                      size="small"
-                      sx={{ backgroundColor: `${CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E'}20`, color: CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E', fontWeight: 700 }}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                      {(plant.states || []).slice(0, 2).map((s) => <Chip key={s} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: 10, height: 20 }} />)}
-                      {plant.states?.length > 2 && <Chip label={`+${plant.states.length - 2}`} size="small" sx={{ fontSize: 10, height: 20 }} />}
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    {plant.isEndangered && <Chip label="⚠️ Endangered" size="small" color="error" />}
-                  </TableCell>
-                  <TableCell>
-                    <Button size="small" variant="outlined" color="primary" onClick={() => openEdit(plant)} sx={{ fontSize: 11 }}>Edit</Button>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+        <ResponsiveTable
+          headers={['Plant', 'Scientific Name', 'Category', 'Count', 'Carbon Absorption', 'States', 'Status', 'Actions']}
+          rows={filtered}
+          rowKey={(p) => p._id}
+          loading={loading}
+          emptyMessage="No plants found"
+          renderRow={(plant) => (
+            <>
+              <TableCell sx={{ fontWeight: 700 }}>{plant.name}</TableCell>
+              <TableCell sx={{ fontSize: 12, fontStyle: 'italic', color: 'text.secondary' }}>{plant.scientificName}</TableCell>
+              <TableCell>
+                <Chip label={plant.category} size="small" color={plant.category === 'protected' ? 'warning' : 'default'} variant="outlined" />
+              </TableCell>
+              <TableCell sx={{ fontWeight: 700, color: '#2F6B3F' }}>{(plant.speciesCount ?? 0).toLocaleString()}</TableCell>
+              <TableCell>
+                <Chip
+                  label={plant.carbonAbsorption}
+                  size="small"
+                  sx={{ backgroundColor: `${CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E'}20`, color: CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E', fontWeight: 700 }}
+                />
+              </TableCell>
+              <TableCell>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                  {(plant.states || []).slice(0, 2).map((s) => <Chip key={s} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: 10, height: 20 }} />)}
+                  {plant.states?.length > 2 && <Chip label={`+${plant.states.length - 2}`} size="small" sx={{ fontSize: 10, height: 20 }} />}
+                </Box>
+              </TableCell>
+              <TableCell>
+                {plant.isEndangered && <Chip label="⚠️ Endangered" size="small" color="error" />}
+              </TableCell>
+              <TableCell>
+                <Button size="small" variant="outlined" color="primary" onClick={() => openEdit(plant)} sx={{ fontSize: 11 }}>Edit</Button>
+              </TableCell>
+            </>
+          )}
+          renderMobileCard={(plant) => (
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: 14 }} noWrap>{plant.name}</Typography>
+                  <Typography sx={{ fontSize: 11, fontStyle: 'italic', color: 'text.secondary' }} noWrap>{plant.scientificName}</Typography>
+                </Box>
+                <Box sx={{ textAlign: 'right' }}>
+                  <Typography sx={{ fontWeight: 900, color: '#2F6B3F', fontSize: 15 }}>
+                    {(plant.speciesCount ?? 0).toLocaleString()}
+                  </Typography>
+                  <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>species</Typography>
+                </Box>
+              </Box>
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.75, mb: 1 }}>
+                <Chip label={plant.category} size="small" color={plant.category === 'protected' ? 'warning' : 'default'} variant="outlined" sx={{ fontSize: 10, height: 18 }} />
+                <Chip
+                  label={plant.carbonAbsorption}
+                  size="small"
+                  sx={{ backgroundColor: `${CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E'}20`, color: CARBON_COLORS[plant.carbonAbsorption] || '#9E9E9E', fontWeight: 700, fontSize: 10, height: 18 }}
+                />
+                {plant.isEndangered && <Chip label="⚠️ Endangered" size="small" color="error" sx={{ fontSize: 10, height: 18 }} />}
+              </Box>
+              {plant.states?.length > 0 && (
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mb: 1.25 }}>
+                  {plant.states.slice(0, 4).map((s) => (
+                    <Chip key={s} label={s} size="small" variant="outlined" color="primary" sx={{ fontSize: 10, height: 18 }} />
+                  ))}
+                  {plant.states.length > 4 && (
+                    <Chip label={`+${plant.states.length - 4}`} size="small" sx={{ fontSize: 10, height: 18 }} />
+                  )}
+                </Box>
+              )}
+              <Button fullWidth size="small" variant="outlined" color="primary" onClick={() => openEdit(plant)}>
+                ✏️ Edit
+              </Button>
+            </Box>
+          )}
+        />
       </Card>
 
-      {/* Add/Edit Dialog */}
-      <Dialog open={dialogOpen} onClose={() => !saving && setDialogOpen(false)} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
+      {/* Add/Edit Dialog — fullScreen on mobile so the multi-state picker has room */}
+      <Dialog
+        open={dialogOpen}
+        onClose={() => !saving && setDialogOpen(false)}
+        maxWidth="sm" fullWidth
+        fullScreen={fullScreenDialog}
+        PaperProps={{ sx: { borderRadius: fullScreenDialog ? 0 : 3 } }}
+      >
         <DialogTitle fontWeight={800}>{editId ? '✏️ Edit Plant' : '➕ Add Plant Species'}</DialogTitle>
         <DialogContent sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 2 }}>
           {[

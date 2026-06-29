@@ -1,5 +1,10 @@
 'use client';
-import { useState } from 'react';
+
+// Sidebar — nav items and logout, used both as the permanent sidebar on
+// ≥ md screens and the body of the SwipeableDrawer on smaller screens.
+// `AdminLayout` is responsible for picking the right shell; this component
+// only renders the visual contents.
+
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -8,7 +13,7 @@ import {
 } from '@mui/material';
 import Cookies from 'js-cookie';
 
-const NAV_ITEMS = [
+export const NAV_ITEMS = [
   { label: 'Dashboard', href: '/dashboard', emoji: '📊' },
   { label: 'Users', href: '/users', emoji: '👥' },
   { label: 'Products', href: '/products', emoji: '🏺' },
@@ -20,7 +25,9 @@ const NAV_ITEMS = [
   { label: 'Carbon Reports', href: '/carbon-reports', emoji: '🌍' },
 ];
 
-export default function Sidebar() {
+// The rendered contents of the sidebar / drawer. Both shells wrap this in
+// their own chrome (permanent fixed Box vs Drawer paper).
+export default function Sidebar({ onNavigate }) {
   const pathname = usePathname();
 
   const handleLogout = () => {
@@ -30,10 +37,7 @@ export default function Sidebar() {
   };
 
   return (
-    <Box sx={{
-      width: 260, minHeight: '100vh', backgroundColor: '#1A4A2A',
-      display: 'flex', flexDirection: 'column', position: 'fixed', left: 0, top: 0, bottom: 0, zIndex: 100,
-    }}>
+    <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
       {/* Logo */}
       <Box sx={{ p: 3, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
         <Typography variant="h6" sx={{ color: '#fff', fontWeight: 900, fontSize: 18 }}>
@@ -53,6 +57,7 @@ export default function Sidebar() {
               <ListItemButton
                 component={Link}
                 href={item.href}
+                onClick={onNavigate}
                 sx={{
                   mx: 1, borderRadius: 2, mb: 0.5,
                   backgroundColor: active ? 'rgba(255,255,255,0.15)' : 'transparent',
@@ -83,7 +88,10 @@ export default function Sidebar() {
             <Typography sx={{ color: 'rgba(255,255,255,0.6)', fontSize: 11 }}>Super Admin</Typography>
           </Box>
         </Box>
-        <ListItemButton onClick={handleLogout} sx={{ borderRadius: 2, color: 'rgba(255,255,255,0.7)', '&:hover': { backgroundColor: 'rgba(255,0,0,0.15)' } }}>
+        <ListItemButton
+          onClick={handleLogout}
+          sx={{ borderRadius: 2, color: 'rgba(255,255,255,0.7)', '&:hover': { backgroundColor: 'rgba(255,0,0,0.15)' } }}
+        >
           <ListItemIcon sx={{ minWidth: 30, fontSize: 16 }}>🚪</ListItemIcon>
           <ListItemText primary="Logout" primaryTypographyProps={{ fontSize: 13 }} />
         </ListItemButton>
