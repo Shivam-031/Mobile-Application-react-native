@@ -236,9 +236,9 @@ const IndiaMapScreen = ({ navigation }) => {
     if (matched) {
       drillToState(matched);
     } else {
-      // State has no mock data — still open the StateDashboard with zeros so
-      // the drill-down affordance is consistent. Use the same single-instance
-      // nav so "back" returns to the map.
+      // State has no analytics yet — still open the StateDashboard so the
+      // drill-down affordance is consistent. The screen handles its own
+      // empty / error state; we just feed it a name.
       openStateDashboard(stateName);
       setSelectedState({ name: stateName, carbonImpact: 0, products: 0, plants: 0, districts: [] });
       setLevel('state');

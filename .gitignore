@@ -75,3 +75,8 @@ desktop.ini
 # ── Misc ─────────────────────────────────────────────────────
 .cache/
 coverage/
+DEPLOYMENT_ROADMAP.md
+mapstructure.md
+SETUP_CHECKLIST.md
+uploadstructure.md
+Makefile

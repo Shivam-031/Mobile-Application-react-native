@@ -19,7 +19,6 @@ const MENU_ITEMS = [
   { emoji: '📦', label: 'My Orders', screen: 'Orders' },
   { emoji: '🌍', label: 'Carbon History', screen: 'CarbonHistory' },
   { emoji: '🌿', label: 'Saved Plants', screen: 'Plants' },
-  { emoji: '🔔', label: 'Notifications', screen: 'Notifications' },
   { emoji: '⚙️', label: 'Settings', screen: 'Settings' },
   { emoji: '❓', label: 'Help & Support', screen: 'Help' },
   { emoji: '📜', label: 'About Green Yatra', screen: 'About' },

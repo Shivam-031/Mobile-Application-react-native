@@ -11,9 +11,8 @@ const { width } = Dimensions.get('window');
 const CHART_WIDTH = width - SPACING.lg * 2;
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-// Empty-state placeholder for the carbon chart. The audit removed the
-// hardcoded MOCK_HISTORY short-circuit — when the backend returns no
-// records yet we render this single point so the chart math still works
+// Empty-state placeholder for the carbon chart. When the backend returns
+// no records we render an empty array so the chart math still works
 // instead of fabricating a year of invented data.
 const EMPTY_HISTORY = [];
 

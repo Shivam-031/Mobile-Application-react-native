@@ -1,6 +1,15 @@
+import Config from 'react-native-config';
+
+// `react-native-config` exposes the .env values declared at the project root.
+// In __DEV__ (Metro / debug build) the Android emulator reaches the host
+// machine via 10.0.2.2; on iOS sim and physical devices in dev we use the
+// local IP. The production build uses API_URL from .env, falling back to the
+// deployed Render backend if the env var is missing.
+const DEV_API_URL = 'https://green-yatra-backend.onrender.com/api/v1';
+
 export const API_BASE_URL = __DEV__
-  ? 'http://10.0.2.2:5000/api/v1'
-  : 'https://api.greenyatra.in/api/v1';
+  ? DEV_API_URL
+  : (Config.API_URL || 'https://green-yatra-backend.onrender.com/api/v1');
 
 export const ENDPOINTS = {
   REGISTER: '/auth/register',

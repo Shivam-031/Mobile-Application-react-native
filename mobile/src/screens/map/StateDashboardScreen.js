@@ -41,13 +41,19 @@ const StateDashboardScreen = ({ navigation, route }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCity, setSelectedCity] = useState(null);
 
-  // Fetch (cached) payload on focus — reuses getStateDashboard's in-module cache.
+  // Fetch (cached) payload on focus — reuses getStateDashboard's in-module
+  // cache. Errors are captured (not swallowed) so the screen can render an
+  // honest empty state instead of an indefinite "Loading…" spinner.
+  const [loadError, setLoadError] = useState(null);
   const load = useCallback(async (forceRefresh = false) => {
     if (forceRefresh) clearStateAnalyticsCache();
     setLoading(true);
+    setLoadError(null);
     try {
       const data = await getStateDashboard(stateName);
       setPayload(data);
+    } catch (e) {
+      setLoadError(e);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -109,6 +115,27 @@ const StateDashboardScreen = ({ navigation, route }) => {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={COLORS.primary} />
           <Text style={styles.loadingText}>Loading {stateName} dashboard…</Text>
+        </View>
+      </View>
+    );
+  }
+
+  if (loadError && !payload) {
+    const msg = loadError.response?.data?.message || loadError.message || 'Unable to load state data.';
+    return (
+      <View style={styles.root}>
+        <StatusBar barStyle="light-content" />
+        {TopBar}
+        <View style={styles.loadingContainer}>
+          <Text style={styles.emptyEmoji}>📡</Text>
+          <Text style={styles.emptyText}>Couldn't load {stateName} analytics.</Text>
+          <Text style={[styles.emptyText, { marginTop: 4, fontSize: 12 }]}>{msg}</Text>
+          <TouchableOpacity
+            style={styles.emptyReset}
+            onPress={() => load(true)}
+          >
+            <Text style={styles.emptyResetTxt}>Retry</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );

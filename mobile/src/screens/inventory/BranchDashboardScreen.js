@@ -8,82 +8,6 @@ import { COLORS, SPACING, RADIUS, SHADOWS } from '../../constants/theme';
 import { LIVE_CATEGORIES } from '../../constants/categories';
 import api from '../../services/apiService';
 
-// State-aware mock fallback.
-// Hashes the state name to a seed so the same state always returns the
-// same numbers, and two different states always return different numbers.
-// Without this, every employee would see the same Maharashtra-shaped
-// dashboard regardless of their actual state (the bug we're fixing).
-function makeRng(seed) {
-  let s = seed >>> 0 || 1;
-  return () => {
-    s ^= s << 13; s >>>= 0;
-    s ^= s >>> 17;
-    s ^= s << 5;  s >>>= 0;
-    return ((s & 0xFFFFFFFF) >>> 0) / 0x100000000;
-  };
-}
-function hashString(str) {
-  let h = 2166136261;
-  for (let i = 0; i < str.length; i++) {
-    h ^= str.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-const intBetween = (rng, min, max) => Math.floor(rng() * (max - min + 1)) + min;
-const pick = (rng, arr) => arr[Math.floor(rng() * arr.length)];
-
-// Per-state mock branch data. Driven by the employee's state name so
-// different employees see different numbers.
-const STATE_PRODUCT_NAMES = {
-  Maharashtra: ['Terracotta Pot', 'Clay Planter', 'Bamboo Basket', 'Jali Pot', 'Coconut Shell Bowl'],
-  Karnataka: ['Rosewood Vase', 'Sandalwood Box', 'Mysore Pot', 'Coorg Planter', 'Areca Bowl'],
-  Kerala: ['Coir Planter', 'Coconut Lamp', 'Bamboo Tray', 'Wooden Vase', 'Banana Fibre Bowl'],
-  Gujarat: ['Bandhani Planter', 'Mirror Pot', 'Kutchi Vase', 'Terracotta Diya', 'Ajrakh Pot'],
-  Rajasthan: ['Blue Pottery Vase', 'Marble Bowl', 'Rajasthani Jali', 'Hand-painted Pot', 'Pichwai Vase'],
-  'Tamil Nadu': ['Tanjore Pot', 'Bronze Vase', 'Chola Bowl', 'Kanchipuram Lamp', 'Palm Leaf Basket'],
-  Assam: ['Bamboo Planter Set', 'Jute Basket', 'Bell Metal Vase', 'Cane Tray', 'Hemp Bag'],
-};
-const FALLBACK_NAMES = ['Handmade Pot', 'Eco Planter', 'Natural Vase', 'Artisan Bowl', 'Local Craft Pot'];
-
-function buildStateMock(stateName) {
-  const seed = hashString(stateName || 'Unknown');
-  const rng = makeRng(seed);
-  const namePool = STATE_PRODUCT_NAMES[stateName] || FALLBACK_NAMES;
-
-  const products = Array.from({ length: intBetween(rng, 4, 8) }, (_, i) => ({
-    _id: `mock-${stateName}-${i}`,
-    name: pick(rng, namePool),
-    stock: intBetween(rng, 0, 80),
-    sold: intBetween(rng, 5, 90),
-    price: intBetween(rng, 149, 699),
-    status: pick(rng, ['approved', 'approved', 'pending']),
-    carbonSaved: +(rng() * 5 + 1).toFixed(1),
-  }));
-
-  const totalSold = products.reduce((a, p) => a + p.sold, 0);
-  const totalCarbon = +(products.reduce((a, p) => a + p.sold * p.carbonSaved, 0)).toFixed(1);
-
-  return {
-    products,
-    stats: {
-      totalProducts: products.length,
-      orders: totalSold,
-      carbonImpact: totalCarbon,
-      plantCount: intBetween(rng, 80, 600),
-    },
-    orders: Array.from({ length: intBetween(rng, 3, 6) }, (_, i) => ({
-      _id: `mock-order-${stateName}-${i}`,
-      product: pick(rng, products).name,
-      customer: pick(rng, ['Priya S.', 'Amit K.', 'Sunita R.', 'Karan M.', 'Neha V.', 'Rohit P.']),
-      qty: intBetween(rng, 1, 4),
-      total: intBetween(rng, 199, 1999),
-      status: pick(rng, ['delivered', 'shipped', 'processing', 'placed']),
-      date: new Date(Date.now() - intBetween(rng, 0, 7 * 86400_000)).toISOString().slice(0, 10),
-    })),
-  };
-}
-
 const STATUS_COLORS = {
   approved: '#4CAF50', pending: '#FF9800', rejected: '#F44336',
   delivered: '#4CAF50', shipped: '#2196F3', processing: '#FF9800',
@@ -260,10 +184,10 @@ const BranchDashboardScreen = ({ navigation }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editStockProduct, setEditStockProduct] = useState(null);
 
-  // Pulled from real backend, scoped by the logged-in employee. Falls back
-  // to a state-specific mock generator (keyed by user.state) on network
-  // failure so the dashboard always shows data relevant to THIS employee.
-  const [products, setProducts] = useState([]);
+  // Pulled from real backend, scoped by the logged-in employee. Each panel
+// degrades independently — a missing /analytics/branch summary still leaves
+// the products list and orders list working when their endpoints succeed.
+const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [stats, setStats] = useState({ totalProducts: 0, orders: 0, carbonImpact: 0, plantCount: 0 });
   const [loading, setLoading] = useState(true);
@@ -293,15 +217,10 @@ const BranchDashboardScreen = ({ navigation }) => {
         carbonSaved: p.carbonSaved,
       }));
     }
-    if (nextProducts.length === 0) {
-      nextProducts = buildStateMock(employeeState).products;
-    }
 
-    // ----- Stats from products -----
+    // ----- Stats from /analytics/branch (real) -----
     const realStats = productsRes.status === 'fulfilled' ? productsRes.value?.data?.data?.summary : null;
-    const totalCarbon = realStats?.totalCarbon
-      ? +realStats.totalCarbon
-      : +nextProducts.reduce((a, p) => a + p.sold * p.carbonSaved, 0).toFixed(1);
+    const totalCarbon = realStats?.totalCarbon ? +realStats.totalCarbon : 0;
 
     // ----- Orders (filter by employee state client-side because the backend
     //       /orders/branch/all endpoint doesn't actually filter by state) -----
@@ -324,9 +243,6 @@ const BranchDashboardScreen = ({ navigation }) => {
           date: (o.createdAt || '').slice(0, 10),
         }));
     }
-    if (nextOrders.length === 0) {
-      nextOrders = buildStateMock(employeeState).orders;
-    }
 
     // ----- Plant count for state -----
     let plantCount = 0;
@@ -341,7 +257,7 @@ const BranchDashboardScreen = ({ navigation }) => {
       totalProducts: realStats?.totalProducts ?? nextProducts.length,
       orders: nextOrders.length,
       carbonImpact: totalCarbon,
-      plantCount: plantCount || buildStateMock(employeeState).stats.plantCount,
+      plantCount,
     });
   }, [employeeState]);
 
@@ -385,8 +301,9 @@ const BranchDashboardScreen = ({ navigation }) => {
               <View style={styles.verifiedBadge}><Text style={styles.verifiedTxt}>✅ Verified Employee</Text></View>
             </View>
 
-            {/* Stats Grid — sourced from real backend (or state-specific
-                mock when offline). All four numbers reflect THIS branch. */}
+            {/* Stats Grid — sourced from real backend (/analytics/branch and
+                /plants). Missing panels degrade to 0 rather than fabricating
+                numbers. All values reflect THIS branch. */}
             <View style={styles.statsGrid}>
               {[
                 { emoji: '🏺', label: 'Total Products', value: stats.totalProducts, color: COLORS.primary },

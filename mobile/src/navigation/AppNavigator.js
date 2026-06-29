@@ -38,9 +38,6 @@ import BranchAnalyticsScreen from '../screens/inventory/BranchAnalyticsScreen';
 // Admin
 import AdminDashboardScreen from '../screens/admin/AdminDashboardScreen';
 
-// Notifications
-import NotificationsScreen from '../screens/notifications/NotificationsScreen';
-
 const Tab = createBottomTabNavigator();
 const HomeStack = createStackNavigator();
 const MapStack = createStackNavigator();
@@ -57,7 +54,6 @@ const HomeStackNav = () => (
     <HomeStack.Screen name="NearbyEco" component={NearbyEcoLocationsScreen} />
     <HomeStack.Screen name="MyOrders" component={MyOrdersScreen} />
     <HomeStack.Screen name="OrderDetail" component={OrderDetailScreen} />
-    <HomeStack.Screen name="Notifications" component={NotificationsScreen} />
   </HomeStack.Navigator>
 );
 
@@ -89,7 +85,6 @@ const PlantStackNav = () => (
 const ProfileStackNav = () => (
   <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
     <ProfileStack.Screen name="ProfileMain" component={ProfileScreen} />
-    <ProfileStack.Screen name="Notifications" component={NotificationsScreen} />
     <ProfileStack.Screen name="MyOrders" component={MyOrdersScreen} />
     <ProfileStack.Screen name="OrderDetail" component={OrderDetailScreen} />
     <ProfileStack.Screen name="CarbonHistory" component={CarbonHistoryScreen} />

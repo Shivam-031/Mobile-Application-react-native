@@ -1,8 +1,8 @@
 // AdminDashboardScreen — replaces the Employee Dashboard for MASTER_ADMIN users.
 // Lists product submissions from branch employees and lets the admin approve
 // or reject them inline. Uses GET /products?status=pending + PATCH /products/:id/approve
-// (already wired in the backend), with offline mock fallback so the screen
-// renders even before the backend is reachable.
+// (already wired in the backend). On backend failure the screen renders an
+// empty state — no fabricated product list.
 import React, { useEffect, useState, useCallback } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
@@ -14,24 +14,6 @@ import api from '../../services/apiService';
 
 const STATUS_COLORS = { pending: '#FF9800', approved: '#4CAF50', rejected: '#F44336' };
 const ROLE_COLORS = { MASTER_ADMIN: '#9C27B0' };
-
-const MOCK_PENDING = [
-  {
-    _id: 'p1', name: 'Small Terracotta Pot', category: 'small', price: 149, stock: 80,
-    carbonSaved: 1.2, state: 'Maharashtra', branchId: { name: 'Rajesh Patil' },
-    createdAt: new Date(Date.now() - 3600_000).toISOString(), status: 'pending',
-  },
-  {
-    _id: 'p2', name: 'Bamboo Planter Set', category: 'medium', price: 349, stock: 30,
-    carbonSaved: 3.8, state: 'Assam', branchId: { name: 'Priya Das' },
-    createdAt: new Date(Date.now() - 86_400_000).toISOString(), status: 'pending',
-  },
-  {
-    _id: 'p3', name: 'Decorative Jali Pot', category: 'decorative', price: 399, stock: 25,
-    carbonSaved: 3.0, state: 'Gujarat', branchId: { name: 'Amit Shah' },
-    createdAt: new Date(Date.now() - 86_400_000 * 2).toISOString(), status: 'pending',
-  },
-];
 
 const TABS = [
   { key: 'pending',  label: 'Pending',  emoji: '⏳' },
@@ -126,8 +108,9 @@ const AdminDashboardScreen = ({ navigation }) => {
       const list = res.data?.data?.products || res.data?.data || [];
       setProducts(Array.isArray(list) ? list : []);
     } catch {
-      // Backend not reachable — fall back to mock so the screen renders.
-      setProducts(MOCK_PENDING);
+      // Backend not reachable — render the empty state below rather than
+      // fabricated products.
+      setProducts([]);
     }
   }, []);
 
@@ -166,13 +149,13 @@ const AdminDashboardScreen = ({ navigation }) => {
         action === 'approved' ? 'Approved ✅' : 'Rejected ❌',
         `${product.name} has been ${action}.`,
       );
-    } catch {
-      // Offline fallback so the admin can demo the flow without the backend.
-      setProducts((prev) => prev.filter((p) => p._id !== product._id));
-      setRecentlyActed((r) => [{ ...product, _action: action, _at: Date.now(), _note: adminNote }, ...r].slice(0, 5));
+    } catch (err) {
+      // Backend rejected the action — don't fake a local success. Surface the
+      // server message (or a generic one) and leave the list untouched.
+      const msg = err?.response?.data?.message || err?.message || 'Could not reach the server.';
       Alert.alert(
-        `${action === 'approved' ? 'Approved' : 'Rejected'} (offline)`,
-        `${product.name} was updated locally. Backend not reachable.`,
+        action === 'approved' ? 'Approve failed' : 'Reject failed',
+        msg,
       );
     } finally {
       setBusy(false);

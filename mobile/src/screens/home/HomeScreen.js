@@ -51,9 +51,6 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.headerSub}>Let's make India greener today</Text>
           </View>
           <View style={styles.headerRight}>
-            <TouchableOpacity onPress={() => navigation.navigate('Notifications')} style={styles.iconBtn}>
-              <Text style={{ fontSize: 22 }}>🔔</Text>
-            </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Profile')} style={styles.iconBtn}>
               <Text style={{ fontSize: 22 }}>🧑‍🌾</Text>
             </TouchableOpacity>
