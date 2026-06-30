@@ -1,8 +1,8 @@
 'use client';
-import { useState } from 'react';
+import { Fragment, useState } from 'react';
 import {
   Box, Grid, Card, CardContent, Typography, Chip,
-  Table, TableBody, TableCell, TableHead, TableRow, LinearProgress,
+  TableCell, LinearProgress,
 } from '@mui/material';
 import AdminLayout from '../../components/common/AdminLayout';
 import ResponsiveTable from '../../components/common/ResponsiveTable';
@@ -25,6 +25,63 @@ const STATES_DATA = [
 const maxCarbon = Math.max(...STATES_DATA.map((s) => s.carbon));
 const maxPlants = Math.max(...STATES_DATA.map((s) => s.plants));
 const maxRevenue = Math.max(...STATES_DATA.map((s) => s.revenue));
+
+// CellStack — repeated cell layout for the state table.
+//
+// Renders as a 3-row vertical stack:
+//   ┌──────────────────┐
+//   │  tiny grey label │   small caption, text.secondary, uppercase
+//   │  bold value      │   bold, accent colour (or inherited)
+//   │  ▭▭▭▭▭▭ progress  │   LinearProgress, optional
+//   └──────────────────┘
+//
+// Every numeric cell on the states table uses this so rows stay vertically
+// aligned and self-describing — readers don't have to scan up to the header
+// to know what they're looking at.
+function CellStack({ label, value, accent, bar }) {
+  // All cells use the same left alignment so the column header at the top of
+  // the table sits directly above its data — readers don't have to mentally
+  // translate "right-aligned header text" to "left-aligned body value".
+  return (
+    <Box sx={{ textAlign: 'left' }}>
+      <Typography
+        sx={{
+          fontSize: 9,
+          fontWeight: 700,
+          textTransform: 'uppercase',
+          letterSpacing: 0.5,
+          color: 'text.secondary',
+          lineHeight: 1.2,
+        }}
+      >
+        {label}
+      </Typography>
+      <Typography
+        sx={{
+          fontSize: 14,
+          fontWeight: 800,
+          color: accent || 'text.primary',
+          lineHeight: 1.2,
+          mt: 0.25,
+        }}
+      >
+        {value}
+      </Typography>
+      {bar != null && (
+        <LinearProgress
+          variant="determinate"
+          value={Math.min(100, Math.max(0, bar * 100))}
+          sx={{
+            height: 4,
+            borderRadius: 2,
+            mt: 0.5,
+            '& .MuiLinearProgress-bar': { backgroundColor: accent },
+          }}
+        />
+      )}
+    </Box>
+  );
+}
 
 export default function StatesPage() {
   const [selected, setSelected] = useState(null);
@@ -68,22 +125,23 @@ export default function StatesPage() {
         <CardContent sx={{ p: 0 }}>
           <ResponsiveTable
             headers={['State', 'Branches', 'Products', 'Orders', 'CO₂ Saved', 'Plant Species', 'Revenue']}
-            headerAlign={['left', 'center', 'right', 'right', 'left', 'left', 'left']}
+            columnWidths={['150px', '95px', '80px', '80px', '140px', '140px', '140px']}
             rows={STATES_DATA}
             rowKey={(s) => s.name}
             loading={false}
             emptyMessage="No states"
+            // Row-level styling + click handler live on the wrapper — passing
+            // <TableRow> in renderRow breaks the layout (see ResponsiveTable
+            // doc comment). Per-row background tracks the selected state.
+            rowSx={(state) => ({
+              cursor: 'pointer',
+              backgroundColor: selected === state.name ? '#2F6B3F08' : 'transparent',
+              '& td': { verticalAlign: 'top', py: 1.5 },
+            })}
+            onRowClick={(state) => setSelected(selected === state.name ? null : state.name)}
             renderRow={(state, i) => (
-              <TableRow
-                hover
-                onClick={() => setSelected(selected === state.name ? null : state.name)}
-                sx={{
-                  cursor: 'pointer',
-                  backgroundColor: selected === state.name ? '#2F6B3F08' : 'transparent',
-                  '& td': { verticalAlign: 'middle', py: 1.25 },
-                }}
-              >
-                <TableCell sx={{ minWidth: 180 }}>
+              <Fragment key={state.name}>
+                <TableCell sx={{ width: 150, minWidth: 150 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                     <Typography sx={{ fontSize: 24, lineHeight: 1 }}>{state.emoji}</Typography>
                     <Box sx={{ minWidth: 0 }}>
@@ -92,30 +150,48 @@ export default function StatesPage() {
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell align="center" sx={{ width: 100 }}>
-                  <Chip label={state.branches} size="small" color="primary" sx={{ fontWeight: 700, minWidth: 36 }} />
+                {/* Every numeric cell uses CellStack — columns have explicit
+                    widths matching the header's `columnWidths` prop so the
+                    header text and body data line up in the same column.
+                    Column widths are sized to fit a ~1090px viewport (sidebar
+                    260px + content padding 32px ≈ 798px of usable space). */}
+                <TableCell sx={{ width: 95, minWidth: 95 }}>
+                  <CellStack
+                    label="Branches"
+                    value={<Chip label={state.branches} size="small" color="primary" sx={{ fontWeight: 700, minWidth: 36, height: 22 }} />}
+                  />
                 </TableCell>
-                <TableCell align="right" sx={{ width: 90, fontWeight: 600 }}>{state.products}</TableCell>
-                <TableCell align="right" sx={{ width: 90, fontWeight: 600 }}>{state.orders}</TableCell>
-                <TableCell sx={{ minWidth: 140 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#2F6B3F' }}>{state.carbon} kg</Typography>
-                    <LinearProgress variant="determinate" value={(state.carbon / maxCarbon) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#2F6B3F' } }} />
-                  </Box>
+                <TableCell sx={{ width: 80, minWidth: 80 }}>
+                  <CellStack label="Products" value={state.products} />
                 </TableCell>
-                <TableCell sx={{ minWidth: 140 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#4CAF50' }}>{state.plants}</Typography>
-                    <LinearProgress variant="determinate" value={(state.plants / maxPlants) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#4CAF50' } }} />
-                  </Box>
+                <TableCell sx={{ width: 80, minWidth: 80 }}>
+                  <CellStack label="Orders" value={state.orders} />
                 </TableCell>
-                <TableCell sx={{ minWidth: 160 }}>
-                  <Box>
-                    <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#795548' }}>₹{state.revenue.toLocaleString()}</Typography>
-                    <LinearProgress variant="determinate" value={(state.revenue / maxRevenue) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#795548' } }} />
-                  </Box>
+                <TableCell sx={{ width: 140, minWidth: 140 }}>
+                  <CellStack
+                    label="CO₂ Saved"
+                    value={<>{state.carbon} kg</>}
+                    accent="#2F6B3F"
+                    bar={state.carbon / maxCarbon}
+                  />
                 </TableCell>
-              </TableRow>
+                <TableCell sx={{ width: 140, minWidth: 140 }}>
+                  <CellStack
+                    label="Plant Species"
+                    value={state.plants}
+                    accent="#4CAF50"
+                    bar={state.plants / maxPlants}
+                  />
+                </TableCell>
+                <TableCell sx={{ width: 140, minWidth: 140 }}>
+                  <CellStack
+                    label="Revenue"
+                    value={`₹${state.revenue.toLocaleString()}`}
+                    accent="#795548"
+                    bar={state.revenue / maxRevenue}
+                  />
+                </TableCell>
+              </Fragment>
             )}
             renderMobileCard={(state, i) => (
               <Box
