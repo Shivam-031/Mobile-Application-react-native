@@ -96,10 +96,11 @@ export default function AdminLayout({ children }) {
         sx={{
           flex: 1,
           minHeight: '100vh',
+          minWidth: 0, // prevent flex children from forcing horizontal scroll
           // AppBar on mobile is 56px tall — leave a 64px gap so the content
           // doesn't tuck under it. On md+ there's no AppBar.
           marginLeft: { xs: 0, md: `${DRAWER_WIDTH}px` },
-          padding: { xs: '72px 12px 16px', md: 3 },
+          padding: { xs: '72px 16px 16px', md: 3 },
         }}
       >
         {children}

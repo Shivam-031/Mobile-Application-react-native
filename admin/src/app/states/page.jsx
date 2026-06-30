@@ -68,6 +68,7 @@ export default function StatesPage() {
         <CardContent sx={{ p: 0 }}>
           <ResponsiveTable
             headers={['State', 'Branches', 'Products', 'Orders', 'CO₂ Saved', 'Plant Species', 'Revenue']}
+            headerAlign={['left', 'center', 'right', 'right', 'left', 'left', 'left']}
             rows={STATES_DATA}
             rowKey={(s) => s.name}
             loading={false}
@@ -76,33 +77,39 @@ export default function StatesPage() {
               <TableRow
                 hover
                 onClick={() => setSelected(selected === state.name ? null : state.name)}
-                sx={{ cursor: 'pointer', backgroundColor: selected === state.name ? '#2F6B3F08' : 'transparent' }}
+                sx={{
+                  cursor: 'pointer',
+                  backgroundColor: selected === state.name ? '#2F6B3F08' : 'transparent',
+                  '& td': { verticalAlign: 'middle', py: 1.25 },
+                }}
               >
-                <TableCell>
+                <TableCell sx={{ minWidth: 180 }}>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                    <Typography sx={{ fontSize: 24 }}>{state.emoji}</Typography>
-                    <Box>
-                      <Typography sx={{ fontWeight: 700, fontSize: 13 }}>{state.name}</Typography>
-                      <Chip label={`#${i + 1}`} size="small" sx={{ height: 18, fontSize: 10, backgroundColor: i < 3 ? '#FFD70030' : '#f0f0f0' }} />
+                    <Typography sx={{ fontSize: 24, lineHeight: 1 }}>{state.emoji}</Typography>
+                    <Box sx={{ minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: 13, lineHeight: 1.2 }}>{state.name}</Typography>
+                      <Chip label={`#${i + 1}`} size="small" sx={{ mt: 0.5, height: 18, fontSize: 10, backgroundColor: i < 3 ? '#FFD70030' : '#f0f0f0' }} />
                     </Box>
                   </Box>
                 </TableCell>
-                <TableCell><Chip label={state.branches} size="small" color="primary" /></TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>{state.products}</TableCell>
-                <TableCell sx={{ fontWeight: 600 }}>{state.orders}</TableCell>
-                <TableCell>
+                <TableCell align="center" sx={{ width: 100 }}>
+                  <Chip label={state.branches} size="small" color="primary" sx={{ fontWeight: 700, minWidth: 36 }} />
+                </TableCell>
+                <TableCell align="right" sx={{ width: 90, fontWeight: 600 }}>{state.products}</TableCell>
+                <TableCell align="right" sx={{ width: 90, fontWeight: 600 }}>{state.orders}</TableCell>
+                <TableCell sx={{ minWidth: 140 }}>
                   <Box>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#2F6B3F' }}>{state.carbon} kg</Typography>
                     <LinearProgress variant="determinate" value={(state.carbon / maxCarbon) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#2F6B3F' } }} />
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ minWidth: 140 }}>
                   <Box>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#4CAF50' }}>{state.plants}</Typography>
                     <LinearProgress variant="determinate" value={(state.plants / maxPlants) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#4CAF50' } }} />
                   </Box>
                 </TableCell>
-                <TableCell>
+                <TableCell sx={{ minWidth: 160 }}>
                   <Box>
                     <Typography sx={{ fontSize: 13, fontWeight: 700, color: '#795548' }}>₹{state.revenue.toLocaleString()}</Typography>
                     <LinearProgress variant="determinate" value={(state.revenue / maxRevenue) * 100} sx={{ height: 4, borderRadius: 2, mt: 0.5, '& .MuiLinearProgress-bar': { backgroundColor: '#795548' } }} />
@@ -120,47 +127,41 @@ export default function StatesPage() {
                   p: 0.5,
                 }}
               >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-                  <Typography sx={{ fontSize: 28 }}>{state.emoji}</Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1.25 }}>
+                  <Typography sx={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{state.emoji}</Typography>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography sx={{ fontWeight: 700, fontSize: 15 }} noWrap>{state.name}</Typography>
-                    <Box sx={{ display: 'flex', gap: 0.5, mt: 0.25, alignItems: 'center' }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: 15, lineHeight: 1.2 }} noWrap>{state.name}</Typography>
+                    <Box sx={{ display: 'flex', gap: 0.5, mt: 0.5, alignItems: 'center', flexWrap: 'wrap' }}>
                       <Chip label={`#${i + 1}`} size="small" sx={{ height: 18, fontSize: 10, backgroundColor: i < 3 ? '#FFD70030' : '#f0f0f0' }} />
-                      <Chip label={`${state.branches} branches`} size="small" color="primary" sx={{ fontSize: 10, height: 18 }} />
+                      <Chip label={`${state.branches} branch${state.branches === 1 ? '' : 'es'}`} size="small" color="primary" sx={{ fontSize: 10, height: 18 }} />
                     </Box>
                   </Box>
-                  <Box sx={{ textAlign: 'right' }}>
-                    <Typography sx={{ fontWeight: 900, fontSize: 15, color: '#795548' }}>₹{(state.revenue / 1000).toFixed(0)}k</Typography>
+                  <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                    <Typography sx={{ fontWeight: 900, fontSize: 15, color: '#795548', lineHeight: 1.2 }}>₹{(state.revenue / 1000).toFixed(0)}k</Typography>
                     <Typography sx={{ fontSize: 10, color: 'text.secondary' }}>revenue</Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: 'flex', gap: 1.5, fontSize: 12, color: 'text.secondary', mb: 1, flexWrap: 'wrap' }}>
-                  <span style={{ fontWeight: 700, color: '#2F6B3F' }}>🌍 {state.carbon} kg CO₂</span>
-                  <span>📦 {state.products}</span>
-                  <span>🛒 {state.orders}</span>
-                  <span style={{ fontWeight: 600, color: '#4CAF50' }}>🌿 {state.plants}</span>
-                </Box>
-                {/* Mobile carries the same progress bars the desktop table has,
-                    so the comparison between states stays legible on small screens */}
+                {/* Mobile keeps just the progress bars (the desktop table puts numbers
+                    on top of bars, so we mirror that) — no duplicated inline stats row. */}
                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.75 }}>
                   <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary' }}>
-                      <span>CO₂</span>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary', mb: 0.25 }}>
+                      <span>CO₂ saved</span>
                       <span style={{ color: '#2F6B3F', fontWeight: 700 }}>{state.carbon} kg</span>
                     </Box>
                     <LinearProgress variant="determinate" value={(state.carbon / maxCarbon) * 100} sx={{ height: 4, borderRadius: 2, '& .MuiLinearProgress-bar': { backgroundColor: '#2F6B3F' } }} />
                   </Box>
                   <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary' }}>
-                      <span>Plants</span>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary', mb: 0.25 }}>
+                      <span>Plant species</span>
                       <span style={{ color: '#4CAF50', fontWeight: 700 }}>{state.plants}</span>
                     </Box>
                     <LinearProgress variant="determinate" value={(state.plants / maxPlants) * 100} sx={{ height: 4, borderRadius: 2, '& .MuiLinearProgress-bar': { backgroundColor: '#4CAF50' } }} />
                   </Box>
                   <Box>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary' }}>
-                      <span>Revenue</span>
-                      <span style={{ color: '#795548', fontWeight: 700 }}>₹{state.revenue.toLocaleString()}</span>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, color: 'text.secondary', mb: 0.25 }}>
+                      <span>Products · Orders</span>
+                      <span style={{ color: '#795548', fontWeight: 700 }}>{state.products} · {state.orders}</span>
                     </Box>
                     <LinearProgress variant="determinate" value={(state.revenue / maxRevenue) * 100} sx={{ height: 4, borderRadius: 2, '& .MuiLinearProgress-bar': { backgroundColor: '#795548' } }} />
                   </Box>

@@ -1,7 +1,7 @@
 'use client';
 import {
   Box, Grid, Card, CardContent, Typography, Chip, LinearProgress,
-  TableCell,
+  TableCell, useMediaQuery, useTheme,
 } from '@mui/material';
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -47,6 +47,14 @@ export default function CarbonReportsPage() {
   const totalTrees = MONTHLY_CARBON.reduce((a, d) => a + d.trees, 0);
   const netReduction = (((totalSaved / totalGenerated) * 100)).toFixed(1);
 
+  // Recharts ResponsiveContainer only accepts a number/string for `height`;
+  // an sx-style responsive object silently renders a 0-height chart on
+  // mobile. Resolve the breakpoint here instead.
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const trendChartH = isMdUp ? 280 : 220;
+  const treesChartH = isMdUp ? 240 : 200;
+
   return (
     <AdminLayout>
       <Box mb={3}>
@@ -80,7 +88,7 @@ export default function CarbonReportsPage() {
           <Card>
             <CardContent>
               <Typography variant="h6" mb={2}>📊 Carbon Generated vs Saved (Monthly)</Typography>
-              <ResponsiveContainer width="100%" height={{ xs: 220, md: 280 }}>
+              <ResponsiveContainer width="100%" height={trendChartH}>
                 <AreaChart data={MONTHLY_CARBON}>
                   <defs>
                     <linearGradient id="genGrad" x1="0" y1="0" x2="0" y2="1">
@@ -110,7 +118,7 @@ export default function CarbonReportsPage() {
           <Card sx={{ height: '100%' }}>
             <CardContent>
               <Typography variant="h6" mb={2}>🌳 Tree Equivalents Saved</Typography>
-              <ResponsiveContainer width="100%" height={{ xs: 200, md: 240 }}>
+              <ResponsiveContainer width="100%" height={treesChartH}>
                 <BarChart data={MONTHLY_CARBON}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="month" tick={{ fontSize: 11 }} />

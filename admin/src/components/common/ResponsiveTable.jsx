@@ -16,6 +16,7 @@
 //     renderMobileCard={(p) => (<Box>...</Box>)}
 //     loading={false}
 //     emptyMessage="No products match your filters"
+//     headerAlign={['left', 'center', 'right', /* ... */]}  // optional, defaults to 'left'
 //   />
 
 import {
@@ -33,6 +34,10 @@ export default function ResponsiveTable({
   loading = false,
   emptyMessage = 'No data',
   mobileCardSx,
+  // Optional per-column header alignment so headers line up with body cells
+  // (e.g. right-aligned "Revenue" header above right-aligned ₹ amounts).
+  // Defaults to 'left' for every column.
+  headerAlign,
 }) {
   const theme = useTheme();
   const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
@@ -43,8 +48,24 @@ export default function ResponsiveTable({
       <Table>
         <TableHead sx={{ backgroundColor: '#f8f8f8' }}>
           <TableRow>
-            {headers.map((h) => (
-              <TableCell key={h} sx={{ fontWeight: 700, fontSize: 12 }}>{h}</TableCell>
+            {headers.map((h, idx) => (
+              <TableCell
+                key={h}
+                align={headerAlign?.[idx] || 'left'}
+                sx={{
+                  fontWeight: 700,
+                  fontSize: 11,
+                  textTransform: 'uppercase',
+                  letterSpacing: 0.4,
+                  color: 'text.secondary',
+                  py: 1.5,
+                  borderBottom: '2px solid',
+                  borderBottomColor: 'divider',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {h}
+              </TableCell>
             ))}
           </TableRow>
         </TableHead>
