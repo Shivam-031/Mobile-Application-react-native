@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import {
   Box, Grid, Card, CardContent, Typography, ToggleButtonGroup, ToggleButton,
-  CircularProgress, Alert, Chip,
+  CircularProgress, Alert, Chip, useTheme, useMediaQuery,
 } from '@mui/material';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid,
@@ -16,6 +16,16 @@ import api from '../../lib/api';
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 export default function AnalyticsPage() {
+  // Recharts ResponsiveContainer only accepts a number/string for `height`;
+  // an sx-style responsive object silently renders a 0-height chart on
+  // mobile. Resolve once here and pass the resolved number down.
+  const theme = useTheme();
+  const isMdUp = useMediaQuery(theme.breakpoints.up('md'));
+  const trendH = isMdUp ? 280 : 220;
+  const carbonH = isMdUp ? 240 : 200;
+  const stateH = isMdUp ? 300 : 240;
+  const radarH = isMdUp ? 280 : 240;
+
   const [period, setPeriod] = useState('monthly');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -116,7 +126,7 @@ export default function AnalyticsPage() {
                 <Typography variant="h6">💰 Revenue & Orders Trend</Typography>
                 <Chip label="Awaiting time-series API" size="small" variant="outlined" />
               </Box>
-              <ResponsiveContainer width="100%" height={{ xs: 220, md: 280 }}>
+              <ResponsiveContainer width="100%" height={trendH}>
                 <AreaChart data={monthly}>
                   <defs>
                     <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -149,7 +159,7 @@ export default function AnalyticsPage() {
                 <Typography variant="h6">🌍 Carbon Saved (kg)</Typography>
                 <Chip label="Awaiting time-series API" size="small" variant="outlined" />
               </Box>
-              <ResponsiveContainer width="100%" height={{ xs: 200, md: 240 }}>
+              <ResponsiveContainer width="100%" height={carbonH}>
                 <AreaChart data={monthly}>
                   <defs>
                     <linearGradient id="carbGrad" x1="0" y1="0" x2="0" y2="1">
@@ -182,7 +192,7 @@ export default function AnalyticsPage() {
                   No state-level data yet
                 </Typography>
               ) : (
-                <ResponsiveContainer width="100%" height={{ xs: 240, md: 300 }}>
+                <ResponsiveContainer width="100%" height={stateH}>
                   <BarChart data={stateStats} layout="vertical" margin={{ left: 60 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis type="number" tick={{ fontSize: 11 }} />
@@ -210,7 +220,7 @@ export default function AnalyticsPage() {
                   Need at least 2 approved products to compare
                 </Typography>
               ) : (
-                <ResponsiveContainer width="100%" height={{ xs: 240, md: 280 }}>
+                <ResponsiveContainer width="100%" height={radarH}>
                   <RadarChart data={productRadar}>
                     <PolarGrid />
                     <PolarAngleAxis dataKey="metric" tick={{ fontSize: 12 }} />
